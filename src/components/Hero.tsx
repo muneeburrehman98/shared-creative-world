@@ -1,7 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Users, Camera, Code, MessageSquare } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export const Hero = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen bg-gradient-hero relative overflow-hidden">
       {/* Floating Elements */}
@@ -32,12 +35,21 @@ export const Hero = () => {
           
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-20">
-            <Button variant="hero" size="hero" className="group">
+            <Button 
+              variant="hero" 
+              size="hero" 
+              className="group"
+              onClick={() => navigate('/auth/signup')}
+            >
               Get Started
               <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
             </Button>
-            <Button variant="glass" size="lg">
-              Explore Features
+            <Button 
+              variant="glass" 
+              size="lg"
+              onClick={() => navigate('/auth/signin')}
+            >
+              Sign In
             </Button>
           </div>
           
