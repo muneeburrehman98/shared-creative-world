@@ -39,6 +39,7 @@ export const Hero = () => {
               variant="hero" 
               size="hero" 
               className="group"
+              type="button"
               onClick={() => navigate('/auth/signup')}
             >
               Get Started
@@ -47,6 +48,7 @@ export const Hero = () => {
             <Button 
               variant="glass" 
               size="lg"
+              type="button"
               onClick={() => navigate('/auth/signin')}
             >
               Sign In
