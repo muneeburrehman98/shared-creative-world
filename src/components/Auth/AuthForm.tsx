@@ -4,6 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
+import { Home } from 'lucide-react';
 
 interface AuthFormProps {
   mode: 'signin' | 'signup';
@@ -16,6 +18,7 @@ export const AuthForm = ({ mode, onSubmit, onModeChange }: AuthFormProps) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,6 +55,17 @@ export const AuthForm = ({ mode, onSubmit, onModeChange }: AuthFormProps) => {
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="text-center">
+        <div className="flex justify-between items-center mb-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2"
+          >
+            <Home className="h-4 w-4" />
+            Home
+          </Button>
+        </div>
         <CardTitle className="text-2xl font-bold">
           {mode === 'signin' ? 'Welcome Back' : 'Create Account'}
         </CardTitle>
