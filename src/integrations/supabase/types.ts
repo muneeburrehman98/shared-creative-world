@@ -56,6 +56,33 @@ export type Database = {
           },
         ]
       }
+      follows: {
+        Row: {
+          created_at: string
+          follower_id: string
+          following_id: string
+          id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          following_id: string
+          id?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          following_id?: string
+          id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       likes: {
         Row: {
           created_at: string
@@ -137,9 +164,16 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           created_at: string
+          department: string | null
           display_name: string | null
+          dob: string | null
+          followers_count: number | null
+          following_count: number | null
+          full_name: string | null
           id: string
           is_private: boolean
+          nutech_id: string | null
+          phone_number: string | null
           updated_at: string
           user_id: string
           username: string | null
@@ -148,9 +182,16 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          department?: string | null
           display_name?: string | null
+          dob?: string | null
+          followers_count?: number | null
+          following_count?: number | null
+          full_name?: string | null
           id?: string
           is_private?: boolean
+          nutech_id?: string | null
+          phone_number?: string | null
           updated_at?: string
           user_id: string
           username?: string | null
@@ -159,9 +200,16 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          department?: string | null
           display_name?: string | null
+          dob?: string | null
+          followers_count?: number | null
+          following_count?: number | null
+          full_name?: string | null
           id?: string
           is_private?: boolean
+          nutech_id?: string | null
+          phone_number?: string | null
           updated_at?: string
           user_id?: string
           username?: string | null
