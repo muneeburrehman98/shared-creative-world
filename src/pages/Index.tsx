@@ -35,9 +35,17 @@ const Index = () => {
             <p className="text-xl text-muted-foreground mb-8">
               Hello {user.email}! You're successfully signed in.
             </p>
-            <p className="text-muted-foreground">
-              This is where your authenticated app content will go.
-            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button 
+                size="lg"
+                onClick={() => window.location.href = '/social'}
+              >
+                Go to Social Feed
+              </Button>
+              <p className="text-muted-foreground">
+                This is where your authenticated app content will go.
+              </p>
+            </div>
           </div>
         </div>
       </div>
