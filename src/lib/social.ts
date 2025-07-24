@@ -49,17 +49,29 @@ export interface Comment {
 export const socialService = {
   // Posts CRUD
   async getPosts(): Promise<Post[]> {
-    const { data, error } = await supabase
+    const { data: posts, error } = await supabase
       .from('posts')
-      .select(`
-        *,
-        profiles(username, display_name, avatar_url)
-      `)
+      .select('*')
       .eq('is_private', false)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    if (!posts) return [];
+
+    // Get profiles for all user_ids
+    const userIds = posts.map(post => post.user_id);
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('user_id, username, display_name, avatar_url')
+      .in('user_id', userIds);
+
+    // Combine posts with profile data
+    const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+    
+    return posts.map(post => ({
+      ...post,
+      profiles: profileMap.get(post.user_id) || { username: '', display_name: '', avatar_url: null }
+    })) as Post[];
   },
 
   async createPost(post: {
@@ -89,16 +101,28 @@ export const socialService = {
 
   // Stories CRUD
   async getStories(): Promise<Story[]> {
-    const { data, error } = await supabase
+    const { data: stories, error } = await supabase
       .from('stories')
-      .select(`
-        *,
-        profiles(username, display_name, avatar_url)
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    if (!stories) return [];
+
+    // Get profiles for all user_ids
+    const userIds = stories.map(story => story.user_id);
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('user_id, username, display_name, avatar_url')
+      .in('user_id', userIds);
+
+    // Combine stories with profile data
+    const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+    
+    return stories.map(story => ({
+      ...story,
+      profiles: profileMap.get(story.user_id) || { username: '', display_name: '', avatar_url: null }
+    })) as Story[];
   },
 
   async createStory(story: {
@@ -166,17 +190,29 @@ export const socialService = {
 
   // Comments
   async getComments(postId: string): Promise<Comment[]> {
-    const { data, error } = await supabase
+    const { data: comments, error } = await supabase
       .from('comments')
-      .select(`
-        *,
-        profiles(username, display_name, avatar_url)
-      `)
+      .select('*')
       .eq('post_id', postId)
       .order('created_at', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    if (!comments) return [];
+
+    // Get profiles for all user_ids
+    const userIds = comments.map(comment => comment.user_id);
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('user_id, username, display_name, avatar_url')
+      .in('user_id', userIds);
+
+    // Combine comments with profile data
+    const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+    
+    return comments.map(comment => ({
+      ...comment,
+      profiles: profileMap.get(comment.user_id) || { username: '', display_name: '', avatar_url: null }
+    })) as Comment[];
   },
 
   async createComment(postId: string, content: string) {
