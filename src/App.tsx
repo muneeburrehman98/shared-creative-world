@@ -8,6 +8,8 @@ import NotFound from "./pages/NotFound";
 import SignIn from "./pages/Auth/SignIn";
 import SignUp from "./pages/Auth/SignUp";
 import SocialFeed from "./pages/Portals/SocialFeed";
+import { PublicProfile } from "./pages/Portals/PublicProfile";
+import { CreateSocialAccount } from "./pages/Portals/CreateSocialAccount";
 
 const queryClient = new QueryClient();
 
@@ -22,6 +24,9 @@ const App = () => (
           <Route path="/auth/signin" element={<SignIn />} />
           <Route path="/auth/signup" element={<SignUp />} />
           <Route path="/social" element={<SocialFeed />} />
+          <Route path="/portals/social" element={<SocialFeed />} />
+          <Route path="/portals/social/setup" element={<CreateSocialAccount />} />
+          <Route path="/user/:username" element={<PublicProfile />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
