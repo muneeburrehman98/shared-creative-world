@@ -8,6 +8,8 @@ import { useToast } from '@/hooks/use-toast';
 import { socialService, type Post, type Comment } from '@/lib/social';
 import { useAuth } from '@/hooks/use-auth';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { FollowButton } from '@/components/Social/FollowButton';
+import { useNavigate } from 'react-router-dom';
 
 interface PostCardProps {
   post: Post;
@@ -23,6 +25,7 @@ export const PostCard = ({ post, onDelete }: PostCardProps) => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     checkLikeStatus();
@@ -126,10 +129,19 @@ export const PostCard = ({ post, onDelete }: PostCardProps) => {
               {post.profiles.display_name?.charAt(0) || post.profiles.username?.charAt(0) || 'U'}
             </AvatarFallback>
           </Avatar>
-          <div>
-            <p className="font-semibold text-sm">{post.profiles.display_name || post.profiles.username}</p>
+          <div className="flex-1">
+            <p 
+              className="font-semibold text-sm cursor-pointer hover:underline"
+              onClick={() => navigate(`/user/${post.profiles.username}`)}
+            >
+              {post.profiles.display_name || post.profiles.username}
+            </p>
             <p className="text-xs text-muted-foreground">{formatTimeAgo(post.created_at)}</p>
           </div>
+          
+          {user?.id !== post.user_id && (
+            <FollowButton userId={post.user_id} size="sm" variant="outline" />
+          )}
         </div>
         
         {user?.id === post.user_id && (

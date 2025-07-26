@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { FollowerCountModal } from '@/components/Social/FollowerCountModal';
 import { ArrowLeft, MapPin, Calendar, Phone, Building, Lock } from 'lucide-react';
 import { FollowButton } from '@/components/Social/FollowButton';
 import { PostCard } from '@/components/Social/PostCard';
@@ -217,14 +218,18 @@ export const PublicProfile = () => {
                 </div>
 
                 <div className="flex gap-6 mb-4">
-                  <div className="text-center">
-                    <div className="font-semibold">{profile.following_count}</div>
-                    <div className="text-sm text-muted-foreground">Following</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="font-semibold">{profile.followers_count}</div>
-                    <div className="text-sm text-muted-foreground">Followers</div>
-                  </div>
+                  <FollowerCountModal userId={profile.user_id} type="following">
+                    <button className="text-center hover:bg-muted rounded-lg p-2 transition-colors">
+                      <div className="font-semibold">{profile.following_count}</div>
+                      <div className="text-sm text-muted-foreground">Following</div>
+                    </button>
+                  </FollowerCountModal>
+                  <FollowerCountModal userId={profile.user_id} type="followers">
+                    <button className="text-center hover:bg-muted rounded-lg p-2 transition-colors">
+                      <div className="font-semibold">{profile.followers_count}</div>
+                      <div className="text-sm text-muted-foreground">Followers</div>
+                    </button>
+                  </FollowerCountModal>
                 </div>
 
                 {!isOwnProfile && (

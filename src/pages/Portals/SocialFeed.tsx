@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useNavigate } from 'react-router-dom';
+import { useSocialRedirect } from '@/hooks/use-social-redirect';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -10,6 +11,7 @@ import { CreatePostModal } from '@/components/Social/CreatePostModal';
 import { StoryBar } from '@/components/Social/StoryBar';
 import { Home, Users, Search, Heart, User } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { UserSearchModal } from '@/components/Social/UserSearchModal';
 
 const SocialFeed = () => {
   const { user, loading: authLoading } = useAuth();
@@ -17,6 +19,9 @@ const SocialFeed = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+
+  // Check if user needs to complete social profile setup
+  useSocialRedirect();
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -83,13 +88,29 @@ const SocialFeed = () => {
           <h1 className="text-xl font-bold gradient-text">SocialHub</h1>
           
           <div className="flex items-center space-x-2">
-            <Button variant="ghost" size="sm">
-              <Search className="h-4 w-4" />
+            <UserSearchModal />
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => navigate('/portals/following')}
+            >
+              <Users className="h-4 w-4" />
             </Button>
             <Button variant="ghost" size="sm">
               <Heart className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="sm">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => {
+                // Navigate to current user's profile
+                socialService.getProfile().then(profile => {
+                  if (profile?.username) {
+                    navigate(`/user/${profile.username}`);
+                  }
+                });
+              }}
+            >
               <User className="h-4 w-4" />
             </Button>
           </div>
@@ -148,13 +169,32 @@ const SocialFeed = () => {
           <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
             <Home className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="sm">
-            <Search className="h-5 w-5" />
+          <UserSearchModal>
+            <Button variant="ghost" size="sm">
+              <Search className="h-5 w-5" />
+            </Button>
+          </UserSearchModal>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => navigate('/portals/following')}
+          >
+            <Users className="h-5 w-5" />
           </Button>
           <Button variant="ghost" size="sm">
             <Heart className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="sm">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => {
+              socialService.getProfile().then(profile => {
+                if (profile?.username) {
+                  navigate(`/user/${profile.username}`);
+                }
+              });
+            }}
+          >
             <User className="h-5 w-5" />
           </Button>
         </div>
