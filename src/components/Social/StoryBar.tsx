@@ -5,7 +5,8 @@ import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { socialService, type Story } from '@/lib/social';
+import { socialService } from '@/lib/social';
+import { type Story } from '@/lib/social/types';
 import { useAuth } from '@/hooks/use-auth';
 import { Plus } from 'lucide-react';
 
@@ -71,7 +72,7 @@ export const StoryBar = () => {
   };
 
   // Group stories by user
-  const groupedStories = stories.reduce((acc, story) => {
+  const groupedStories = (stories as Story[]).reduce((acc, story) => {
     const key = story.user_id;
     if (!acc[key]) {
       acc[key] = [];
@@ -99,7 +100,7 @@ export const StoryBar = () => {
         {/* Stories */}
         {Object.entries(groupedStories).map(([userId, userStories]) => {
           const latestStory = userStories[0]; // Show the latest story
-          const hasMultiple = userStories.length > 1;
+          const hasMultiple = (userStories as Story[]).length > 1;
           
           return (
             <div key={userId} className="flex-shrink-0">
@@ -149,7 +150,7 @@ export const StoryBar = () => {
                 {/* Multiple stories indicator */}
                 {hasMultiple && (
                   <div className="absolute top-2 right-2 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                    {userStories.length}
+                    {(userStories as Story[]).length}
                   </div>
                 )}
               </Card>

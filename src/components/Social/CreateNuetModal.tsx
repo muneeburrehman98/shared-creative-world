@@ -5,7 +5,8 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { socialService, Post } from '@/lib/social';
+import { socialService } from '@/lib/social';
+import { Post } from '@/lib/social/types';
 import { Plus, Video, X } from 'lucide-react';
 
 interface CreateNuetModalProps {

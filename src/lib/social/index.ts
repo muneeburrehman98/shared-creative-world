@@ -27,7 +27,6 @@ export * from './bookmarks';
 // Re-export all profile-related functions
 export * from './profiles';
 
-// Import types for proper typing of the socialService object
 import { Post, Story, Comment, Profile } from './types';
 
 // For backward compatibility

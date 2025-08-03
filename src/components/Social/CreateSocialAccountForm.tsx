@@ -116,7 +116,7 @@ export const CreateSocialAccountForm = ({ onComplete }: CreateSocialAccountFormP
     } catch (error: unknown) {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to create social account',
+        description: (error as Error)?.message || 'Failed to create social account',
         variant: 'destructive',
       });
     } finally {

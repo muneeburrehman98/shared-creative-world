@@ -47,60 +47,57 @@ export const groupService = {
   async getGroups(): Promise<Group[]> {
     const { data, error } = await supabase
       .from('groups')
-      .select(`
-        *,
-        profiles!groups_created_by_fkey(username, display_name, avatar_url)
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return (data as Group[]) || [];
+    return (data as unknown as Group[]) || [];
   },
 
   async getPublicGroups(): Promise<Group[]> {
     const { data, error } = await supabase
       .from('groups')
-      .select(`
-        *,
-        profiles!groups_created_by_fkey(username, display_name, avatar_url)
-      `)
+      .select('*')
       .eq('is_private', false)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return (data as Group[]) || [];
+    return (data as unknown as Group[]) || [];
   },
 
   async getMyGroups(): Promise<Group[]> {
     const user = await supabase.auth.getUser();
     if (!user.data.user) throw new Error('Not authenticated');
 
-    const { data, error } = await supabase
+    const { data: memberData, error } = await supabase
       .from('group_members')
-      .select(`
-        groups(
-          *,
-          profiles!groups_created_by_fkey(username, display_name, avatar_url)
-        )
-      `)
+      .select('group_id')
       .eq('user_id', user.data.user.id);
 
     if (error) throw error;
-    return data.map(item => item.groups) as Group[];
+    
+    if (!memberData || memberData.length === 0) return [];
+    
+    const groupIds = memberData.map(m => m.group_id);
+    
+    const { data: groupsData, error: groupsError } = await supabase
+      .from('groups')
+      .select('*')
+      .in('id', groupIds);
+    
+    if (groupsError) throw groupsError;
+    return (groupsData as unknown as Group[]) || [];
   },
 
   async getGroupById(id: string): Promise<Group> {
     const { data, error } = await supabase
       .from('groups')
-      .select(`
-        *,
-        profiles!groups_created_by_fkey(username, display_name, avatar_url)
-      `)
+      .select('*')
       .eq('id', id)
       .single();
 
     if (error) throw error;
-    return data as Group;
+    return data as unknown as Group;
   },
 
   async createGroup(group: {
@@ -161,14 +158,11 @@ export const groupService = {
   async getGroupMembers(groupId: string): Promise<GroupMember[]> {
     const { data, error } = await supabase
       .from('group_members')
-      .select(`
-        *,
-        profiles!group_members_user_id_fkey(username, display_name, avatar_url)
-      `)
+      .select('*, created_at')
       .eq('group_id', groupId);
 
     if (error) throw error;
-    return (data as GroupMember[]) || [];
+    return (data as unknown as GroupMember[]) || [];
   },
 
   async joinGroup(groupId: string): Promise<void> {
@@ -270,15 +264,12 @@ export const groupService = {
   async getMessages(groupId: string): Promise<Message[]> {
     const { data, error } = await supabase
       .from('messages')
-      .select(`
-        *,
-        profiles!messages_user_id_fkey(username, display_name, avatar_url)
-      `)
+      .select('*')
       .eq('group_id', groupId)
       .order('created_at', { ascending: true });
 
     if (error) throw error;
-    return (data as Message[]) || [];
+    return (data as unknown as Message[]) || [];
   },
 
   async sendMessage(groupId: string, content: string): Promise<Message> {
@@ -296,7 +287,7 @@ export const groupService = {
       .single();
 
     if (error) throw error;
-    return data as Message;
+    return data as unknown as Message;
   },
 
   // Real-time subscriptions
@@ -320,14 +311,11 @@ export const groupService = {
   async getMessageById(id: string): Promise<Message> {
     const { data, error } = await supabase
       .from('messages')
-      .select(`
-        *,
-        profiles!messages_user_id_fkey(username, display_name, avatar_url)
-      `)
+      .select('*')
       .eq('id', id)
       .single();
 
     if (error) throw error;
-    return data as Message;
+    return data as unknown as Message;
   }
 };

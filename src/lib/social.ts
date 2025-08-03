@@ -11,7 +11,7 @@ export const socialService = {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return (data as Post[]) || [];
+    return (data as unknown as Post[]) || [];
   },
 
   extractHashtags(content: string): string[] {
@@ -68,7 +68,7 @@ export const socialService = {
       .single();
   
     if (error) throw error;
-    return data as Post;
+    return data as unknown as Post;
   },
   
   // Collection-related functions

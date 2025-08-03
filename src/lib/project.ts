@@ -43,21 +43,18 @@ export const projectService = {
     const { data, error } = await query;
 
     if (error) throw error;
-    return (data as Project[]) || [];
+    return (data as unknown as Project[]) || [];
   },
 
   async getProjectById(id: string): Promise<Project> {
     const { data, error } = await supabase
       .from('projects')
-      .select(`
-        *,
-        profiles!projects_user_id_fkey(username, display_name, avatar_url)
-      `)
+      .select('*')
       .eq('id', id)
       .single();
 
     if (error) throw error;
-    return data as Project;
+    return data as unknown as Project;
   },
 
   async createProject(project: {
