@@ -10,7 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { CreateGroupModal } from '@/components/groups/CreateGroupModal';
+import { CreateGroupModal } from '@/components/Groups/CreateGroupModal';
 import { GroupList } from '@/components/Groups/GroupList';
 import { formatDistanceToNow } from 'date-fns';
 
