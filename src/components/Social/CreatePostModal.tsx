@@ -3,12 +3,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { socialService, Post } from '@/lib/social';
-import { Plus, Image, Video, X, Globe, Lock, Users } from 'lucide-react';
+import { Plus, Image, Video, X, Globe, Lock, Users, Edit2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { MediaEditor } from './MediaEditor';
+import { MediaMetadata } from '@/lib/social/types';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 
 interface CreatePostModalProps {
   onPostCreated?: (post: Post) => void;
@@ -17,43 +19,138 @@ interface CreatePostModalProps {
 export const CreatePostModal = ({ onPostCreated }: CreatePostModalProps) => {
   const [open, setOpen] = useState(false);
   const [content, setContent] = useState('');
-  const [isPrivate, setIsPrivate] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [filePreview, setFilePreview] = useState<string | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [filePreviews, setFilePreviews] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [visibility, setVisibility] = useState<'public' | 'private' | 'followers-only'>('public');
-  const [isVideo, setIsVideo] = useState(false); // Add this line
+  const [isVideo, setIsVideo] = useState(false);
+  const [editingMediaIndex, setEditingMediaIndex] = useState<number | null>(null);
+  const [mediaMetadata, setMediaMetadata] = useState<(MediaMetadata | null)[]>([]);
+  
   const { toast } = useToast();
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      setIsVideo(file.type.startsWith('video/')); // Add this line
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    
+    // Check if any file is a video
+    const hasVideo = files.some(file => file.type.startsWith('video/'));
+    
+    // If there's a video, only allow that single video
+    if (hasVideo) {
+      if (files.length > 1) {
+        toast({
+          title: "Only one video allowed",
+          description: "You can only upload one video at a time",
+          variant: "destructive"
+        });
+        return;
+      }
       
-      // Create preview
+      const videoFile = files[0];
+      
+      // Check video duration (requires loading the video)
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.onloadedmetadata = () => {
+        window.URL.revokeObjectURL(video.src);
+        if (video.duration > 60) {
+          toast({
+            title: "Video too long",
+            description: "Videos must be 60 seconds or less",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        setSelectedFiles([videoFile]);
+        setIsVideo(true);
+        
+        // Create preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setFilePreviews([e.target?.result as string]);
+          setMediaMetadata([null]);
+        };
+        reader.readAsDataURL(videoFile);
+      };
+      video.src = URL.createObjectURL(videoFile);
+      return;
+    }
+    
+    // For images, allow multiple (up to 10)
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    if (imageFiles.length === 0) {
+      toast({
+        title: "Invalid files",
+        description: "Please select image files",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Limit to 10 images
+    const totalFiles = selectedFiles.length + imageFiles.length;
+    if (totalFiles > 10) {
+      toast({
+        title: "Too many files",
+        description: "You can upload a maximum of 10 images",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Add the new files to the existing ones
+    const newFiles = [...selectedFiles, ...imageFiles];
+    setSelectedFiles(newFiles);
+    setIsVideo(false);
+    
+    // Create previews for all new files
+    imageFiles.forEach(file => {
       const reader = new FileReader();
       reader.onload = (e) => {
-        setFilePreview(e.target?.result as string);
+        setFilePreviews(prev => [...prev, e.target?.result as string]);
+        setMediaMetadata(prev => [...prev, null]);
       };
       reader.readAsDataURL(file);
+    });
+  };
+
+  const removeFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    setFilePreviews(prev => prev.filter((_, i) => i !== index));
+    setMediaMetadata(prev => prev.filter((_, i) => i !== index));
+    
+    if (selectedFiles.length === 1) {
+      setIsVideo(false);
     }
   };
-
-  const clearFile = () => {
-    setSelectedFile(null);
-    setFilePreview(null);
-    setIsVideo(false); // Add this line
+  
+  const openMediaEditor = (index: number) => {
+    setEditingMediaIndex(index);
+  };
+  
+  const handleMediaSave = (editedUrl: string, metadata: MediaMetadata) => {
+    if (editingMediaIndex === null) return;
+    
+    // In a real implementation, we would replace the preview with the edited image
+    // For now, we'll just update the metadata
+    setMediaMetadata(prev => {
+      const newMetadata = [...prev];
+      newMetadata[editingMediaIndex] = metadata;
+      return newMetadata;
+    });
+    
+    setEditingMediaIndex(null);
   };
 
-  // Update handleSubmit to include visibility
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!content.trim() && !selectedFile) {
+    if (!content.trim() && selectedFiles.length === 0) {
       toast({
         title: "Error",
-        description: "Please add some content or upload a file",
+        description: "Please add some content or upload files",
         variant: "destructive"
       });
       return;
@@ -63,25 +160,33 @@ export const CreatePostModal = ({ onPostCreated }: CreatePostModalProps) => {
     try {
       let imageUrl: string | undefined;
       let videoUrl: string | undefined;
+      let mediaUrls: string[] | undefined;
 
-      // Upload file if selected
-      if (selectedFile) {
-        const isVideo = selectedFile.type.startsWith('video/');
-        const bucket = isVideo ? 'social-videos' : 'social-images';
-        const uploadedUrl = await socialService.uploadFile(selectedFile, bucket);
-        
+      // Upload files if selected
+      if (selectedFiles.length > 0) {
         if (isVideo) {
-          videoUrl = uploadedUrl;
+          // Single video upload
+          videoUrl = await socialService.uploadFile(selectedFiles[0], 'social-videos');
+        } else if (selectedFiles.length === 1) {
+          // Single image upload
+          imageUrl = await socialService.uploadFile(selectedFiles[0], 'social-images');
         } else {
-          imageUrl = uploadedUrl;
+          // Multiple images upload (carousel)
+          mediaUrls = [];
+          for (const file of selectedFiles) {
+            const url = await socialService.uploadFile(file, 'social-images');
+            mediaUrls.push(url);
+          }
         }
       }
 
-      // Create post with visibility
+      // Create post with visibility and media metadata
       const post = await socialService.createPost({
         content: content.trim() || undefined,
         image_url: imageUrl,
         video_url: videoUrl,
+        media_urls: mediaUrls,
+        media_metadata: mediaMetadata.filter(Boolean).length > 0 ? mediaMetadata : undefined,
         is_private: visibility === 'private',
         visibility: visibility
       });
@@ -94,7 +199,10 @@ export const CreatePostModal = ({ onPostCreated }: CreatePostModalProps) => {
       // Reset form
       setContent('');
       setVisibility('public');
-      clearFile();
+      setSelectedFiles([]);
+      setFilePreviews([]);
+      setMediaMetadata([]);
+      setIsVideo(false);
       setOpen(false);
       if (onPostCreated && post) {
         onPostCreated(post);
@@ -110,7 +218,6 @@ export const CreatePostModal = ({ onPostCreated }: CreatePostModalProps) => {
     }
   };
 
-  // Add visibility selection UI
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -136,30 +243,93 @@ export const CreatePostModal = ({ onPostCreated }: CreatePostModalProps) => {
             />
           </div>
 
-          {filePreview && (
-            <div className="relative rounded-lg overflow-hidden border">
+          {filePreviews.length > 0 && (
+            <div className="rounded-lg overflow-hidden border">
               {isVideo ? (
-                <video 
-                  src={filePreview} 
-                  controls 
-                  className="w-full h-auto max-h-64 object-cover"
-                />
+                <div className="relative">
+                  <video 
+                    src={filePreviews[0]} 
+                    controls 
+                    className="w-full h-auto max-h-64 object-cover"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="absolute top-2 right-2"
+                    onClick={() => removeFile(0)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : filePreviews.length === 1 ? (
+                <div className="relative">
+                  <img 
+                    src={filePreviews[0]} 
+                    alt="Preview" 
+                    className="w-full h-auto max-h-64 object-cover"
+                    style={{ filter: mediaMetadata[0]?.effects?.map(e => e.type === 'filter' ? e.name : '').join(' ') || '' }}
+                  />
+                  <div className="absolute top-2 right-2 flex space-x-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => openMediaEditor(0)}
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => removeFile(0)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
               ) : (
-                <img 
-                  src={filePreview} 
-                  alt="Preview" 
-                  className="w-full h-auto max-h-64 object-cover"
-                />
+                <Carousel className="w-full">
+                  <CarouselContent>
+                    {filePreviews.map((preview, index) => (
+                      <CarouselItem key={index}>
+                        <div className="relative">
+                          <img 
+                            src={preview} 
+                            alt={`Preview ${index + 1}`} 
+                            className="w-full h-64 object-cover"
+                            style={{ filter: mediaMetadata[index]?.effects?.map(e => e.type === 'filter' ? e.name : '').join(' ') || '' }}
+                          />
+                          <div className="absolute top-2 right-2 flex space-x-2">
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => openMediaEditor(index)}
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => removeFile(index)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <div className="absolute bottom-2 right-2 bg-background/80 rounded-full px-2 py-1">
+                            <span className="text-xs">{index + 1}/{filePreviews.length}</span>
+                          </div>
+                        </div>
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                  <CarouselPrevious className="-left-4" />
+                  <CarouselNext className="-right-4" />
+                </Carousel>
               )}
-              <Button
-                type="button"
-                variant="destructive"
-                size="sm"
-                className="absolute top-2 right-2"
-                onClick={clearFile}
-              >
-                <X className="h-4 w-4" />
-              </Button>
             </div>
           )}
 
@@ -169,7 +339,7 @@ export const CreatePostModal = ({ onPostCreated }: CreatePostModalProps) => {
                 <Button type="button" variant="outline" size="sm" className="w-full" asChild>
                   <span>
                     <Image className="h-4 w-4 mr-2" />
-                    Add Photo
+                    Add Photos
                   </span>
                 </Button>
               </Label>
@@ -179,6 +349,7 @@ export const CreatePostModal = ({ onPostCreated }: CreatePostModalProps) => {
                 accept="image/*,video/*"
                 onChange={handleFileSelect}
                 className="hidden"
+                multiple={!isVideo}
               />
             </div>
           </div>
@@ -220,17 +391,6 @@ export const CreatePostModal = ({ onPostCreated }: CreatePostModalProps) => {
             </p>
           </div>
 
-          {/* Remove the old private switch since we now have visibility selection */}
-          {/* <div className="flex items-center space-x-2">
-            <Switch
-              id="private-post"
-              checked={isPrivate}
-              onCheckedChange={setIsPrivate}
-            />
-            <Label htmlFor="private-post" className="text-sm">
-              Private post (only you can see this)
-            </Label>
-          </div> */}
           <div className="flex space-x-2">
             <Button
               type="button"
@@ -243,13 +403,23 @@ export const CreatePostModal = ({ onPostCreated }: CreatePostModalProps) => {
             <Button
               type="submit"
               className="flex-1"
-              disabled={loading || (!content.trim() && !selectedFile)}
+              disabled={loading || (!content.trim() && selectedFiles.length === 0)}
             >
               {loading ? 'Creating...' : 'Create Post'}
             </Button>
           </div>
         </form>
       </DialogContent>
+      
+      {/* Media Editor Dialog */}
+      {editingMediaIndex !== null && filePreviews[editingMediaIndex] && (
+        <MediaEditor
+          open={editingMediaIndex !== null}
+          onOpenChange={() => setEditingMediaIndex(null)}
+          imageUrl={filePreviews[editingMediaIndex]}
+          onSave={handleMediaSave}
+        />
+      )}
     </Dialog>
   );
 };

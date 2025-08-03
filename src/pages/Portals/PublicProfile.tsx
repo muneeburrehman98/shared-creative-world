@@ -96,7 +96,7 @@ export const PublicProfile = () => {
 
           setPosts(postsWithProfiles as Post[]);
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         toast({
           title: 'Error',
           description: error.message || 'Failed to load profile',

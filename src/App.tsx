@@ -7,6 +7,8 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import SignIn from "./pages/Auth/SignIn";
 import SignUp from "./pages/Auth/SignUp";
+import ForgotPassword from "./pages/Auth/ForgotPassword";
+import ResetPassword from "./pages/Auth/ResetPassword";
 import SocialFeed from "./pages/Portals/SocialFeed";
 import { PublicProfile } from "./pages/Portals/PublicProfile";
 import { CreateSocialAccount } from "./pages/Portals/CreateSocialAccount";
@@ -29,6 +31,8 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/auth/signin" element={<SignIn />} />
           <Route path="/auth/signup" element={<SignUp />} />
+          <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+          <Route path="/auth/reset-password" element={<ResetPassword />} />
           
           {/* Protected Routes */}
           <Route path="/social" element={<ProtectedRoute><SocialFeed /></ProtectedRoute>} />

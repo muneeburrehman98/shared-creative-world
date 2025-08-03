@@ -9,7 +9,7 @@ import { Home } from 'lucide-react';
 
 interface AuthFormProps {
   mode: 'signin' | 'signup';
-  onSubmit: (email: string, password: string) => Promise<{ error: any }>;
+  onSubmit: (email: string, password: string) => Promise<{ error: Error | null }>;
   onModeChange: () => void;
 }
 
@@ -99,6 +99,17 @@ export const AuthForm = ({ mode, onSubmit, onModeChange }: AuthFormProps) => {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
+            {mode === 'signin' && (
+              <div className="text-right">
+                <Button 
+                  variant="link" 
+                  className="p-0 h-auto font-normal text-xs"
+                  onClick={() => navigate('/auth/forgot-password')}
+                >
+                  Forgot password?
+                </Button>
+              </div>
+            )}
           </div>
           <Button 
             type="submit" 

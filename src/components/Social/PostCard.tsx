@@ -3,13 +3,16 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Heart, MessageCircle, Share, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Heart, MessageCircle, Share, MoreHorizontal, Trash2, Bookmark, FolderPlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { socialService, type Post, type Comment } from '@/lib/social';
+import { socialService } from '@/lib/social';
+import type { Post, Comment } from '@/lib/social/types';
 import { useAuth } from '@/hooks/use-auth';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { FollowButton } from '@/components/Social/FollowButton';
 import { useNavigate } from 'react-router-dom';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface PostCardProps {
   post: Post;
@@ -23,12 +26,34 @@ export const PostCard = ({ post, onDelete }: PostCardProps) => {
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [showCollectionsDialog, setShowCollectionsDialog] = useState(false);
+  const [collections, setCollections] = useState<{ id: string; name: string }[]>([]);
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
+    const checkLikeStatus = async () => {
+      try {
+        const liked = await socialService.checkLike(post.id);
+        setIsLiked(liked);
+      } catch (error) {
+        console.error('Error checking like status:', error);
+      }
+    };
+
+    const checkBookmarkStatus = async () => {
+      try {
+        const bookmarked = await socialService.checkBookmark(post.id);
+        setIsBookmarked(bookmarked);
+      } catch (error) {
+        console.error('Error checking bookmark status:', error);
+      }
+    };
+
     checkLikeStatus();
+    checkBookmarkStatus();
   }, [post.id]);
 
   const checkLikeStatus = async () => {
@@ -37,6 +62,15 @@ export const PostCard = ({ post, onDelete }: PostCardProps) => {
       setIsLiked(liked);
     } catch (error) {
       console.error('Error checking like status:', error);
+    }
+  };
+
+  const checkBookmarkStatus = async () => {
+    try {
+      const bookmarked = await socialService.checkBookmark(post.id);
+      setIsBookmarked(bookmarked);
+    } catch (error) {
+      console.error('Error checking bookmark status:', error);
     }
   };
 
@@ -49,6 +83,23 @@ export const PostCard = ({ post, onDelete }: PostCardProps) => {
       toast({
         title: "Error",
         description: "Failed to update like",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleBookmark = async () => {
+    try {
+      const newBookmarkStatus = await socialService.toggleBookmark(post.id);
+      setIsBookmarked(newBookmarkStatus);
+      toast({
+        title: newBookmarkStatus ? "Saved" : "Removed",
+        description: newBookmarkStatus ? "Post saved to bookmarks" : "Post removed from bookmarks"
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update bookmark",
         variant: "destructive"
       });
     }
@@ -104,6 +155,36 @@ export const PostCard = ({ post, onDelete }: PostCardProps) => {
       toast({
         title: "Error",
         description: "Failed to delete post",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const loadCollections = async () => {
+    try {
+      const data = await socialService.getCollections();
+      setCollections(data);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load collections",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleAddToCollection = async (collectionId: string) => {
+    try {
+      await socialService.addToCollection(collectionId, post.id);
+      toast({
+        title: "Success",
+        description: "Post added to collection"
+      });
+      setShowCollectionsDialog(false);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add post to collection",
         variant: "destructive"
       });
     }
@@ -213,6 +294,27 @@ export const PostCard = ({ post, onDelete }: PostCardProps) => {
             <Button variant="ghost" size="sm">
               <Share className="h-5 w-5" />
             </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleBookmark}
+              className="flex items-center space-x-1"
+            >
+              <Bookmark className={`h-5 w-5 ${isBookmarked ? 'fill-primary text-primary' : ''}`} />
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                loadCollections();
+                setShowCollectionsDialog(true);
+              }}
+              className="flex items-center space-x-1"
+            >
+              <FolderPlus className="h-5 w-5" />
+            </Button>
           </div>
         </div>
 
@@ -251,6 +353,43 @@ export const PostCard = ({ post, onDelete }: PostCardProps) => {
           </div>
         )}
       </CardContent>
+
+      <Dialog open={showCollectionsDialog} onOpenChange={setShowCollectionsDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Save to Collection</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {collections.length === 0 ? (
+              <div className="text-center py-4">
+                <p className="text-muted-foreground mb-2">You don't have any collections yet</p>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowCollectionsDialog(false);
+                    // Navigate to collections page or open create collection dialog
+                  }}
+                >
+                  Create Collection
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {collections.map((collection) => (
+                  <Button
+                    key={collection.id}
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => handleAddToCollection(collection.id)}
+                  >
+                    {collection.name}
+                  </Button>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

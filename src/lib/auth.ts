@@ -29,6 +29,21 @@ export const authService = {
     return { error };
   },
 
+  resetPasswordForEmail: async (email: string) => {
+    const redirectUrl = `${window.location.origin}/auth/reset-password`;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: redirectUrl
+    });
+    return { error };
+  },
+  
+  updatePassword: async (newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+    return { error };
+  },
+
   getCurrentUser: async () => {
     const { data: { user }, error } = await supabase.auth.getUser();
     return { user, error };

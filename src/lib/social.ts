@@ -1,73 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
+import { EditHistory, Story, Comment, Reaction, Bookmark, Profile, Post, MediaMetadata, Collection, CollectionItem, MediaEffect } from './social/types';
 
-export interface Post {
-  id: string;
-  user_id: string;
-  content?: string;
-  image_url?: string;
-  video_url?: string;
-  is_private: boolean;
-  visibility: 'public' | 'private' | 'followers-only';
-  likes_count: number;
-  comments_count: number;
-  created_at: string;
-  updated_at: string;
-  edited_at?: string;
-  edit_history?: any[];
-  hashtags?: string[];
-  mentions?: string[];
-  profiles: {
-    username: string;
-    display_name: string;
-    avatar_url?: string;
-  };
-}
-
-export interface Story {
-  id: string;
-  user_id: string;
-  content?: string;
-  image_url?: string;
-  video_url?: string;
-  expires_at: string;
-  created_at: string;
-  profiles: {
-    username: string;
-    display_name: string;
-    avatar_url?: string;
-  };
-}
-
-export interface Comment {
-  id: string;
-  post_id: string;
-  user_id: string;
-  content: string;
-  created_at: string;
-  parent_id?: string;
-  profiles: {
-    username: string;
-    display_name: string;
-    avatar_url?: string;
-  };
-  replies?: Comment[];
-}
-
-export interface Reaction {
-  id: string;
-  post_id: string;
-  user_id: string;
-  reaction_type: 'like' | 'love' | 'laugh' | 'wow' | 'sad' | 'angry';
-  created_at: string;
-}
-
-export interface Bookmark {
-  id: string;
-  post_id: string;
-  user_id: string;
-  created_at: string;
-}
-
+// Fix return types and error handling
 export const socialService = {
   async getPosts(): Promise<Post[]> {
     const { data, error } = await supabase
@@ -80,43 +14,159 @@ export const socialService = {
     return (data as Post[]) || [];
   },
 
+  extractHashtags(content: string): string[] {
+    const hashtagRegex = /#(\w+)/g;
+    const matches = content.match(hashtagRegex);
+    if (!matches) return [];
+    return matches.map(tag => tag.substring(1));
+  },
+
+  extractMentions(content: string): string[] {
+    const mentionRegex = /@(\w+)/g;
+    const matches = content.match(mentionRegex);
+    if (!matches) return [];
+    return matches.map(mention => mention.substring(1));
+  },
+
+  // Inside the socialService object
   async createPost(post: {
     content?: string;
     image_url?: string;
     video_url?: string;
+    media_urls?: string[];
+    media_metadata?: MediaMetadata | null;
     is_private: boolean;
     visibility: 'public' | 'private' | 'followers-only';
-  }) {
+  }): Promise<Post> {
     const user = await supabase.auth.getUser();
+    if (!user.data.user) throw new Error('Not authenticated');
     
-    // Extract hashtags and mentions if content exists
-    let hashtags: string[] | undefined;
-    let mentions: string[] | undefined;
+    let hashtags: string[] | null = null;
+    let mentions: string[] | null = null;
     
     if (post.content) {
-      hashtags = extractHashtags(post.content);
-      mentions = extractMentions(post.content);
+      hashtags = this.extractHashtags(post.content);
+      mentions = this.extractMentions(post.content);
     }
+    
+    // Add the new fields to the post data
+    const postData = { 
+      ...post, 
+      user_id: user.data.user.id,
+      hashtags,
+      mentions,
+      edit_history: [],
+      edited_at: null,
+      likes_count: 0,
+      comments_count: 0
+    };
     
     const { data, error } = await supabase
       .from('posts')
-      .insert([{ 
-        ...post, 
-        user_id: user.data.user?.id,
-        hashtags,
-        mentions
-      }])
+      .insert([postData])
       .select(`*, profiles!posts_user_id_fkey(username, display_name, avatar_url)`)
       .single();
-
+  
     if (error) throw error;
     return data as Post;
   },
+  
+  // Collection-related functions
+  async getCollections(): Promise<Collection[]> {
+    const user = await supabase.auth.getUser();
+    if (!user.data.user) throw new Error('Not authenticated');
+    
+    const { data, error } = await supabase
+      .from('collections')
+      .select('*, collection_items(count)')
+      .eq('user_id', user.data.user.id)
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    
+    // Transform the data to include item_count
+    return (data as unknown[]).map((collection: unknown) => {
+      const typedCollection = collection as Collection & { collection_items?: Array<{ count: number }> };
+      return {
+        ...typedCollection,
+        item_count: typedCollection.collection_items?.[0]?.count || 0,
+        collection_items: undefined
+      } as Collection;
+    });
+  },
+  
+  async createCollection(collection: {
+    name: string;
+    description?: string;
+    is_private: boolean;
+  }): Promise<Collection> {
+    const user = await supabase.auth.getUser();
+    if (!user.data.user) throw new Error('Not authenticated');
+    
+    const { data, error } = await supabase
+      .from('collections')
+      .insert([{ ...collection, user_id: user.data.user.id }])
+      .select()
+      .single();
+  
+    if (error) throw error;
+    return data as Collection;
+  },
+  
+  async getCollectionItems(collectionId: string): Promise<CollectionItem[]> {
+    const { data, error } = await supabase
+      .from('collection_items')
+      .select(`*, posts!collection_items_post_id_fkey(id, content, image_url, video_url, media_urls, media_metadata, is_private, visibility, likes_count, comments_count, created_at, user_id, hashtags, mentions, edit_history, edited_at, profiles!posts_user_id_fkey(username, display_name, avatar_url))`)
+      .eq('collection_id', collectionId)
+      .order('created_at', { ascending: true });
 
-  async editPost(postId: string, updates: {
+    if (error) throw error;
+    return (data as CollectionItem[]) || [];
+  },
+  
+  async addToCollection(collectionId: string, postId: string): Promise<void> {
+    const user = await supabase.auth.getUser();
+    if (!user.data.user) throw new Error('Not authenticated');
+
+    const { error } = await supabase
+      .from('collection_items')
+      .insert([{ collection_id: collectionId, post_id: postId }]);
+
+    if (error) throw error;
+  },
+  
+  async removeFromCollection(collectionId: string, postId: string): Promise<void> {
+    const user = await supabase.auth.getUser();
+    if (!user.data.user) throw new Error('Not authenticated');
+
+    const { error } = await supabase
+      .from('collection_items')
+      .delete()
+      .eq('collection_id', collectionId)
+      .eq('post_id', postId);
+
+    if (error) throw error;
+  },
+  
+  async deleteCollection(collectionId: string): Promise<void> {
+    const user = await supabase.auth.getUser();
+    if (!user.data.user) throw new Error('Not authenticated');
+
+    const { error } = await supabase
+      .from('collections')
+      .delete()
+      .eq('id', collectionId)
+      .eq('user_id', user.data.user.id);
+
+    if (error) throw error;
+  },
+  
+    async editPost(postId: string, updates: {
     content?: string;
     image_url?: string;
     video_url?: string;
+    media_urls?: string[];
+    media_metadata?: MediaMetadata | null;
     visibility?: 'public' | 'private' | 'followers-only';
   }): Promise<Post> {
     const user = await supabase.auth.getUser();
@@ -132,25 +182,21 @@ export const socialService = {
       
     if (!currentPost) throw new Error('Post not found or you do not have permission to edit');
     
-    // Extract hashtags and mentions if content is being updated
-    let updateData: any = { ...updates };
+    const updateData: Partial<Post> = { ...updates };
     
     if (updates.content) {
-      updateData.hashtags = extractHashtags(updates.content);
-      updateData.mentions = extractMentions(updates.content);
+      updateData.hashtags = this.extractHashtags(updates.content);
+      updateData.mentions = this.extractMentions(updates.content);
     }
     
-    // Add edit timestamp and history
     updateData.edited_at = new Date().toISOString();
     
-    // Prepare edit history entry
-    const historyEntry = {
+    const historyEntry: EditHistory = {
       content: currentPost.content,
       edited_at: currentPost.edited_at || currentPost.created_at,
       visibility: currentPost.visibility
     };
     
-    // Update the post with edit history
     const { data, error } = await supabase
       .from('posts')
       .update({
@@ -168,7 +214,10 @@ export const socialService = {
     return data as Post;
   },
 
-  async deletePost(postId: string) {
+  async deletePost(postId: string): Promise<void> {
+    const user = await supabase.auth.getUser();
+    if (!user.data.user) throw new Error('Not authenticated');
+    
     const { error } = await supabase
       .from('posts')
       .delete()
@@ -191,16 +240,18 @@ export const socialService = {
     content?: string;
     image_url?: string;
     video_url?: string;
-  }) {
+  }): Promise<Story> {
     const user = await supabase.auth.getUser();
+    if (!user.data.user) throw new Error('Not authenticated');
+    
     const { data, error } = await supabase
       .from('stories')
-      .insert([{ ...story, user_id: user.data.user?.id }])
-      .select()
+      .insert([{ ...story, user_id: user.data.user.id }])
+      .select(`*, profiles!stories_user_id_fkey(username, display_name, avatar_url)`)
       .single();
-
+  
     if (error) throw error;
-    return data;
+    return data as Story;
   },
   
   async sharePostToStory(postId: string): Promise<Story> {
@@ -338,7 +389,7 @@ export const socialService = {
     return posts as Post[] || [];
   },
 
-  async toggleLike(postId: string) {
+  async toggleLike(postId: string): Promise<boolean> {
     const user = await supabase.auth.getUser();
     if (!user.data.user) throw new Error('Not authenticated');
 
@@ -431,7 +482,7 @@ export const socialService = {
     return rootComments;
   },
 
-  async createComment(postId: string, content: string, parentId?: string) {
+  async createComment(postId: string, content: string, parentId?: string): Promise<Comment> {
     const user = await supabase.auth.getUser();
     if (!user.data.user) throw new Error('Not authenticated');
 
@@ -443,14 +494,14 @@ export const socialService = {
         content,
         parent_id: parentId
       }])
-      .select()
+      .select(`*, profiles!comments_user_id_fkey(username, display_name, avatar_url)`)
       .single();
 
     if (error) throw error;
-    return data;
+    return data as Comment;
   },
 
-  async uploadFile(file: File, bucket: 'social-images' | 'social-videos' | 'stories'): Promise<string> {
+  async uploadFile(file: File, bucket: 'social-images' | 'social-videos' | 'stories' | 'media-collections'): Promise<string> {
     const user = await supabase.auth.getUser();
     if (!user.data.user) throw new Error('Not authenticated');
 
@@ -463,8 +514,7 @@ export const socialService = {
     const { data } = supabase.storage.from(bucket).getPublicUrl(fileName);
     return data.publicUrl;
   },
-
-  async getProfile(userId?: string) {
+  async getProfile(userId?: string): Promise<Profile> {
     const targetUserId = userId || (await supabase.auth.getUser()).data.user?.id;
 
     const { data, error } = await supabase
@@ -483,7 +533,7 @@ export const socialService = {
     bio?: string;
     avatar_url?: string;
     is_private?: boolean;
-  }) {
+  }): Promise<Profile> {
     const user = await supabase.auth.getUser();
     if (!user.data.user) throw new Error('Not authenticated');
 
@@ -543,20 +593,35 @@ export const socialService = {
 
     if (error) throw error;
     return (data as Post[]) || [];
+  },
+  
+  // Upload multiple files for carousel posts
+  async uploadMultipleFiles(files: File[], bucket: 'social-images' | 'social-videos' | 'media-collections'): Promise<string[]> {
+    const user = await supabase.auth.getUser();
+    if (!user.data.user) throw new Error('Not authenticated');
+
+    const urls: string[] = [];
+    
+    for (const file of files) {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.data.user.id}/${Date.now()}-${urls.length}.${fileExt}`;
+
+      const { error } = await supabase.storage.from(bucket).upload(fileName, file);
+      if (error) throw error;
+
+      const { data } = supabase.storage.from(bucket).getPublicUrl(fileName);
+      urls.push(data.publicUrl);
+    }
+
+    return urls;
+  },
+
+  // Apply media editing (filters, effects, etc.)
+  async applyMediaEditing(file: File, metadata: MediaMetadata): Promise<Blob> {
+    // In a real implementation, this would use a library like fabric.js or a canvas-based solution
+    // For this example, we'll just return the original file and store the metadata
+    return file;
   }
 };
 
-// Move utility functions inside socialService
-extractHashtags(content: string): string[] {
-  const hashtagRegex = /#(\w+)/g;
-  const matches = content.match(hashtagRegex);
-  if (!matches) return [];
-  return matches.map(tag => tag.substring(1)); // Remove the # symbol
-}
-
-extractMentions(content: string): string[] {
-  const mentionRegex = /@(\w+)/g;
-  const matches = content.match(mentionRegex);
-  if (!matches) return [];
-  return matches.map(mention => mention.substring(1)); // Remove the @ symbol
-}
+// Export the types from the types file

@@ -62,10 +62,11 @@ export const FollowerListModal = ({ isOpen, onClose, userId, initialTab = 'follo
       setFollowers(followersData);
       setFollowing(followingData);
       setPendingRequests(requestsData);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load follow data';
       toast({
         title: 'Error',
-        description: error.message || 'Failed to load follow data',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
@@ -81,10 +82,11 @@ export const FollowerListModal = ({ isOpen, onClose, userId, initialTab = 'follo
         title: 'Request accepted',
         description: 'Follow request has been accepted.',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to accept request';
       toast({
         title: 'Error',
-        description: error.message || 'Failed to accept request',
+        description: errorMessage,
         variant: 'destructive',
       });
     }
@@ -98,10 +100,11 @@ export const FollowerListModal = ({ isOpen, onClose, userId, initialTab = 'follo
         title: 'Request rejected',
         description: 'Follow request has been rejected.',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to reject request';
       toast({
         title: 'Error',
-        description: error.message || 'Failed to reject request',
+        description: errorMessage,
         variant: 'destructive',
       });
     }

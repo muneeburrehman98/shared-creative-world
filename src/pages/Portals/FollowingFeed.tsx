@@ -5,13 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { PostCard } from '@/components/Social/PostCard';
 import { supabase } from '@/integrations/supabase/client';
-import { Post } from '@/lib/social';
+import type { Post } from '@/lib/social/types';
 import { useToast } from '@/hooks/use-toast';
 
 export const FollowingFeed = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<unknown>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -76,7 +76,7 @@ export const FollowingFeed = () => {
       );
 
       setPosts(postsWithProfiles as Post[]);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Error',
         description: error.message || 'Failed to load following posts',
