@@ -2,4 +2,5 @@
 
 // Re-export all types
 export type { Database, Json } from './database';
-export { Tables, TablesInsert, TablesUpdate, Enums, CompositeTypes, Constants } from './utils';
+export type { Tables, TablesInsert, TablesUpdate, Enums, CompositeTypes } from './utils';
+export { Constants } from './utils';
