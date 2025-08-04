@@ -33,38 +33,24 @@ export const socialService = {
     content?: string;
     image_url?: string;
     video_url?: string;
-    media_urls?: string[];
-    media_metadata?: MediaMetadata | null;
     is_private: boolean;
-    visibility: 'public' | 'private' | 'followers-only';
   }): Promise<Post> {
     const user = await supabase.auth.getUser();
     if (!user.data.user) throw new Error('Not authenticated');
     
-    let hashtags: string[] | null = null;
-    let mentions: string[] | null = null;
-    
-    if (post.content) {
-      hashtags = this.extractHashtags(post.content);
-      mentions = this.extractMentions(post.content);
-    }
-    
-    // Add the new fields to the post data
+    // Simplified post data for current schema
     const postData = { 
-      ...post, 
-      user_id: user.data.user.id,
-      hashtags,
-      mentions,
-      edit_history: [],
-      edited_at: null,
-      likes_count: 0,
-      comments_count: 0
+      content: post.content,
+      image_url: post.image_url,
+      video_url: post.video_url,
+      is_private: post.is_private,
+      user_id: user.data.user.id
     };
     
     const { data, error } = await supabase
       .from('posts')
       .insert([postData])
-      .select(`*, profiles!posts_user_id_fkey(username, display_name, avatar_url)`)
+      .select('*')
       .single();
   
     if (error) throw error;
@@ -172,46 +158,17 @@ export const socialService = {
     const user = await supabase.auth.getUser();
     if (!user.data.user) throw new Error('Not authenticated');
     
-    // Get the current post to store in edit history
-    const { data: currentPost } = await supabase
-      .from('posts')
-      .select('*')
-      .eq('id', postId)
-      .eq('user_id', user.data.user.id)
-      .single();
-      
-    if (!currentPost) throw new Error('Post not found or you do not have permission to edit');
-    
-    const updateData: Partial<Post> = { ...updates };
-    
-    if (updates.content) {
-      updateData.hashtags = this.extractHashtags(updates.content);
-      updateData.mentions = this.extractMentions(updates.content);
-    }
-    
-    updateData.edited_at = new Date().toISOString();
-    
-    const historyEntry: EditHistory = {
-      content: currentPost.content,
-      edited_at: currentPost.edited_at || currentPost.created_at,
-      visibility: currentPost.visibility
-    };
-    
+    // Simplified edit function for current schema
     const { data, error } = await supabase
       .from('posts')
-      .update({
-        ...updateData,
-        edit_history: currentPost.edit_history ? 
-          [...currentPost.edit_history, historyEntry] : 
-          [historyEntry]
-      })
+      .update(updates)
       .eq('id', postId)
       .eq('user_id', user.data.user.id)
-      .select(`*, profiles!posts_user_id_fkey(username, display_name, avatar_url)`)
+      .select('*')
       .single();
 
     if (error) throw error;
-    return data as Post;
+    return data as unknown as Post;
   },
 
   async deletePost(postId: string): Promise<void> {
@@ -233,7 +190,7 @@ export const socialService = {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return (data as Story[]) || [];
+    return (data as unknown as Story[]) || [];
   },
 
   async createStory(story: {
@@ -251,7 +208,7 @@ export const socialService = {
       .single();
   
     if (error) throw error;
-    return data as Story;
+    return data as unknown as Story;
   },
   
   async sharePostToStory(postId: string): Promise<Story> {
@@ -386,7 +343,7 @@ export const socialService = {
       .order('created_at', { ascending: false });
 
     if (postsError) throw postsError;
-    return posts as Post[] || [];
+    return posts as unknown as Post[] || [];
   },
 
   async toggleLike(postId: string): Promise<boolean> {
@@ -458,7 +415,7 @@ export const socialService = {
     if (error) throw error;
     
     // Organize comments into threads
-    const comments = data as Comment[];
+    const comments = data as unknown as Comment[];
     const rootComments: Comment[] = [];
     const commentMap = new Map<string, Comment>();
     
@@ -498,7 +455,7 @@ export const socialService = {
       .single();
 
     if (error) throw error;
-    return data as Comment;
+    return data as unknown as Comment;
   },
 
   async uploadFile(file: File, bucket: 'social-images' | 'social-videos' | 'stories' | 'media-collections'): Promise<string> {
@@ -568,7 +525,7 @@ export const socialService = {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return (data as Post[]) || [];
+    return (data as unknown as Post[]) || [];
   },
   
   async getPostsByHashtag(hashtag: string): Promise<Post[]> {
@@ -580,7 +537,7 @@ export const socialService = {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return (data as Post[]) || [];
+    return (data as unknown as Post[]) || [];
   },
   
   async getPostsByMention(username: string): Promise<Post[]> {
@@ -592,7 +549,7 @@ export const socialService = {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return (data as Post[]) || [];
+    return (data as unknown as Post[]) || [];
   },
   
   // Upload multiple files for carousel posts

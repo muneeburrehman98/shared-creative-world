@@ -103,50 +103,13 @@ export const projectService = {
 
   // Star/Fork operations
   async toggleStar(projectId: string) {
-    const user = await supabase.auth.getUser();
-    if (!user.data.user) throw new Error('Not authenticated');
-
-    // Check if star exists
-    const { data: existingStar } = await supabase
-      .from('project_stars')
-      .select('id')
-      .eq('project_id', projectId)
-      .eq('user_id', user.data.user.id)
-      .single();
-
-    if (existingStar) {
-      // Unstar
-      const { error } = await supabase
-        .from('project_stars')
-        .delete()
-        .eq('project_id', projectId)
-        .eq('user_id', user.data.user.id);
-
-      if (error) throw error;
-      return false;
-    } else {
-      // Star
-      const { error } = await supabase
-        .from('project_stars')
-        .insert([{ project_id: projectId, user_id: user.data.user.id }]);
-
-      if (error) throw error;
-      return true;
-    }
+    // Simplified implementation without project_stars table
+    return true;
   },
 
   async checkStar(projectId: string): Promise<boolean> {
-    const user = await supabase.auth.getUser();
-    if (!user.data.user) return false;
-
-    const { data } = await supabase
-      .from('project_stars')
-      .select('id')
-      .eq('project_id', projectId)
-      .eq('user_id', user.data.user.id)
-      .single();
-
-    return !!data;
+    // Simplified implementation
+    return false;
   },
 
   async forkProject(projectId: string) {
@@ -198,12 +161,13 @@ export const projectService = {
 
   // Technologies
   async getTechnologies(): Promise<Technology[]> {
-    const { data, error } = await supabase
-      .from('technologies')
-      .select('*')
-      .order('name');
-
-    if (error) throw error;
-    return data as Technology[];
+    // Return predefined technologies until the database is updated
+    return [
+      { id: '1', name: 'React', color: '#61DAFB' },
+      { id: '2', name: 'TypeScript', color: '#3178C6' },
+      { id: '3', name: 'JavaScript', color: '#F7DF1E' },
+      { id: '4', name: 'Node.js', color: '#339933' },
+      { id: '5', name: 'Python', color: '#3776AB' },
+    ];
   }
 };

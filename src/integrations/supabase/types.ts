@@ -279,37 +279,58 @@ export type Database = {
           comments_count: number
           content: string | null
           created_at: string
+          edit_history: Json | null
+          edited_at: string | null
+          hashtags: string[] | null
           id: string
           image_url: string | null
           is_private: boolean
           likes_count: number
+          media_metadata: Json | null
+          media_urls: string[] | null
+          mentions: string[] | null
           updated_at: string
           user_id: string
           video_url: string | null
+          visibility: string | null
         }
         Insert: {
           comments_count?: number
           content?: string | null
           created_at?: string
+          edit_history?: Json | null
+          edited_at?: string | null
+          hashtags?: string[] | null
           id?: string
           image_url?: string | null
           is_private?: boolean
           likes_count?: number
+          media_metadata?: Json | null
+          media_urls?: string[] | null
+          mentions?: string[] | null
           updated_at?: string
           user_id: string
           video_url?: string | null
+          visibility?: string | null
         }
         Update: {
           comments_count?: number
           content?: string | null
           created_at?: string
+          edit_history?: Json | null
+          edited_at?: string | null
+          hashtags?: string[] | null
           id?: string
           image_url?: string | null
           is_private?: boolean
           likes_count?: number
+          media_metadata?: Json | null
+          media_urls?: string[] | null
+          mentions?: string[] | null
           updated_at?: string
           user_id?: string
           video_url?: string | null
+          visibility?: string | null
         }
         Relationships: [
           {
@@ -403,12 +424,14 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          forked_from: string | null
           forks_count: number
           github_url: string | null
           id: string
           image_url: string | null
           image_urls: string[] | null
           live_url: string | null
+          repo_url: string | null
           stars_count: number
           technologies: string[] | null
           title: string
@@ -418,12 +441,14 @@ export type Database = {
         Insert: {
           created_at?: string
           description?: string | null
+          forked_from?: string | null
           forks_count?: number
           github_url?: string | null
           id?: string
           image_url?: string | null
           image_urls?: string[] | null
           live_url?: string | null
+          repo_url?: string | null
           stars_count?: number
           technologies?: string[] | null
           title: string
@@ -433,12 +458,14 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string | null
+          forked_from?: string | null
           forks_count?: number
           github_url?: string | null
           id?: string
           image_url?: string | null
           image_urls?: string[] | null
           live_url?: string | null
+          repo_url?: string | null
           stars_count?: number
           technologies?: string[] | null
           title?: string
@@ -508,6 +535,27 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
         ]
+      }
+      technologies: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          color: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
       }
     }
     Views: {

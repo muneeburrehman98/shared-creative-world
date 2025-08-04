@@ -186,10 +186,7 @@ export const CreatePostModal = ({ onPostCreated }: CreatePostModalProps) => {
         content: content.trim() || undefined,
         image_url: imageUrl,
         video_url: videoUrl,
-        media_urls: mediaUrls,
-        media_metadata: mediaMetadata.filter(Boolean).length > 0 ? mediaMetadata[0] : undefined,
-        is_private: visibility === 'private',
-        visibility: visibility
+        is_private: visibility === 'private'
       });
 
       toast({

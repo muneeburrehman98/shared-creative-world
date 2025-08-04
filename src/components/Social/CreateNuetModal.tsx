@@ -80,8 +80,7 @@ export const CreateNuetModal = ({ onNuetCreated, children }: CreateNuetModalProp
       const post = await socialService.createPost({
         content: content.trim() || undefined,
         video_url: videoUrl,
-        is_private: false,
-        visibility: 'public'
+        is_private: false
       });
 
       toast({

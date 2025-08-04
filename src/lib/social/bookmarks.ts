@@ -58,7 +58,7 @@ export async function getBookmarks(): Promise<Post[]> {
     .order('created_at', { ascending: false });
 
   if (postsError) throw postsError;
-  return posts as Post[] || [];
+  return posts as unknown as Post[] || [];
 }
 
 export async function checkBookmark(postId: string): Promise<boolean> {
