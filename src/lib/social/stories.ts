@@ -5,11 +5,11 @@ import { Story } from './types';
 export async function getStories(): Promise<Story[]> {
   const { data, error } = await supabase
     .from('stories')
-    .select(`*, profiles!stories_user_id_fkey(username, display_name, avatar_url)`)
+    .select('*')
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return (data as Story[]) || [];
+  return data as unknown as Story[] || [];
 }
 
 export async function createStory(story: {
@@ -23,11 +23,11 @@ export async function createStory(story: {
   const { data, error } = await supabase
     .from('stories')
     .insert([{ ...story, user_id: user.data.user.id }])
-    .select(`*, profiles!stories_user_id_fkey(username, display_name, avatar_url)`)
+    .select('*')
     .single();
 
   if (error) throw error;
-  return data as Story;
+  return data as unknown as Story;
 }
 
 export async function sharePostToStory(postId: string): Promise<Story> {

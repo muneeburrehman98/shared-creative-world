@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { FollowerCountModal } from '@/components/Social/FollowerCountModal';
-import { ArrowLeft, MapPin, Calendar, Phone, Building, Lock } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Phone, Building, Lock, Edit } from 'lucide-react';
 import { FollowButton } from '@/components/Social/FollowButton';
 import { PostCard } from '@/components/Social/PostCard';
-import { socialService, Post } from '@/lib/social';
+import { Post } from '@/lib/social/types';
+import { socialService } from '@/lib/social';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -34,6 +35,7 @@ export const PublicProfile = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -99,7 +101,7 @@ export const PublicProfile = () => {
       } catch (error: unknown) {
         toast({
           title: 'Error',
-          description: error.message || 'Failed to load profile',
+          description: (error as Error).message || 'Failed to load profile',
           variant: 'destructive',
         });
       } finally {
@@ -153,7 +155,7 @@ export const PublicProfile = () => {
             <Button 
               variant="ghost" 
               size="sm"
-              onClick={() => window.history.back()}
+                  onClick={() => window.history.back()}
             >
               <ArrowLeft className="w-4 h-4" />
             </Button>

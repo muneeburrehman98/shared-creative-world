@@ -37,7 +37,7 @@ export const FollowingFeed = () => {
       const { data: followingData, error: followingError } = await supabase
         .from('follows')
         .select('following_id')
-        .eq('follower_id', user?.id)
+        .eq('follower_id', (user as any)?.id)
         .eq('status', 'accepted');
 
       if (followingError) throw followingError;
@@ -79,7 +79,7 @@ export const FollowingFeed = () => {
     } catch (error: unknown) {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to load following posts',
+        description: (error as Error).message || 'Failed to load following posts',
         variant: 'destructive',
       });
     } finally {

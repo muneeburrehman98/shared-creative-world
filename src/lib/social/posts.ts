@@ -11,7 +11,7 @@ export async function getPosts(): Promise<Post[]> {
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return (data as Post[]) || [];
+  return (data as unknown as Post[]) || [];
 }
 
 export async function createPost(post: {
@@ -19,7 +19,6 @@ export async function createPost(post: {
   image_url?: string;
   video_url?: string;
   is_private: boolean;
-  visibility: 'public' | 'private' | 'followers-only';
 }): Promise<Post> {
   const user = await supabase.auth.getUser();
   if (!user.data.user) throw new Error('Not authenticated');
@@ -35,71 +34,38 @@ export async function createPost(post: {
   const { data, error } = await supabase
     .from('posts')
     .insert([{ 
-      ...post, 
-      user_id: user.data.user.id,
-      hashtags,
-      mentions,
-      edit_history: [],
-      edited_at: null,
-      likes_count: 0,
-      comments_count: 0
+      content: post.content,
+      image_url: post.image_url,
+      video_url: post.video_url,
+      is_private: post.is_private,
+      user_id: user.data.user.id
     }])
-    .select(`*, profiles!posts_user_id_fkey(username, display_name, avatar_url)`)
+    .select('*')
     .single();
 
   if (error) throw error;
-  return data as Post;
+  return data as unknown as Post;
 }
 
 export async function editPost(postId: string, updates: {
   content?: string;
   image_url?: string;
   video_url?: string;
-  visibility?: 'public' | 'private' | 'followers-only';
 }): Promise<Post> {
   const user = await supabase.auth.getUser();
   if (!user.data.user) throw new Error('Not authenticated');
   
-  // Get the current post to store in edit history
-  const { data: currentPost } = await supabase
-    .from('posts')
-    .select('*')
-    .eq('id', postId)
-    .eq('user_id', user.data.user.id)
-    .single();
-    
-  if (!currentPost) throw new Error('Post not found or you do not have permission to edit');
-  
-  const updateData: Partial<Post> = { ...updates };
-  
-  if (updates.content) {
-    updateData.hashtags = extractHashtags(updates.content);
-    updateData.mentions = extractMentions(updates.content);
-  }
-  
-  updateData.edited_at = new Date().toISOString();
-  
-  const historyEntry = {
-    content: currentPost.content,
-    edited_at: currentPost.edited_at || currentPost.created_at,
-    visibility: currentPost.visibility
-  };
-  
+  // Simplified edit for current schema
   const { data, error } = await supabase
     .from('posts')
-    .update({
-      ...updateData,
-      edit_history: currentPost.edit_history ? 
-        [...currentPost.edit_history, historyEntry] : 
-        [historyEntry]
-    })
+    .update(updates)
     .eq('id', postId)
     .eq('user_id', user.data.user.id)
-    .select(`*, profiles!posts_user_id_fkey(username, display_name, avatar_url)`)
+    .select('*')
     .single();
 
   if (error) throw error;
-  return data as Post;
+  return data as unknown as Post;
 }
 
 export async function deletePost(postId: string): Promise<void> {
@@ -128,35 +94,35 @@ export async function getFollowingPosts(): Promise<Post[]> {
 
   const { data, error } = await supabase
     .from('posts')
-    .select(`*, profiles!posts_user_id_fkey(username, display_name, avatar_url)`)
+    .select('*')
     .in('user_id', followedUsers.map(f => f.following_id))
     .not('is_private', 'eq', true)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return (data as Post[]) || [];
+  return (data as unknown as Post[]) || [];
 }
 
 export async function getPostsByHashtag(hashtag: string): Promise<Post[]> {
   const { data, error } = await supabase
     .from('posts')
-    .select(`*, profiles!posts_user_id_fkey(username, display_name, avatar_url)`)
+    .select('*')
     .contains('hashtags', [hashtag])
     .not('is_private', 'eq', true)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return (data as Post[]) || [];
+  return (data as unknown as Post[]) || [];
 }
 
 export async function getPostsByMention(username: string): Promise<Post[]> {
   const { data, error } = await supabase
     .from('posts')
-    .select(`*, profiles!posts_user_id_fkey(username, display_name, avatar_url)`)
+    .select('*')
     .contains('mentions', [username])
     .not('is_private', 'eq', true)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return (data as Post[]) || [];
+  return (data as unknown as Post[]) || [];
 }

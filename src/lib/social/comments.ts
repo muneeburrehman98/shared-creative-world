@@ -13,7 +13,7 @@ export async function getComments(postId: string): Promise<Comment[]> {
   if (error) throw error;
   
   // Organize comments into threads
-  const comments = data as Comment[];
+  const comments = data as unknown as Comment[];
   const rootComments: Comment[] = [];
   const commentMap = new Map<string, Comment>();
   
@@ -53,5 +53,5 @@ export async function createComment(postId: string, content: string, parentId?: 
     .single();
 
   if (error) throw error;
-  return data;
+  return data as unknown as Comment;
 }

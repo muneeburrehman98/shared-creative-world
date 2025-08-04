@@ -7,7 +7,8 @@ import { CreatePostModal } from '@/components/Social/CreatePostModal';
 import { StoryBar } from '@/components/Social/StoryBar';
 import { UserSearchModal } from '@/components/Social/UserSearchModal';
 import { UserProfileButton } from '@/components/Social/UserProfileButton';
-import { socialService, Post } from '@/lib/social';
+import { Post } from '@/lib/social/types';
+import { socialService } from '@/lib/social';
 import { useAuth } from '@/hooks/use-auth';
 import { useSocialRedirect } from '@/hooks/use-social-redirect';
 
