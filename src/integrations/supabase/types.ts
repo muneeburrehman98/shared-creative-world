@@ -399,6 +399,88 @@ export type Database = {
         }
         Relationships: []
       }
+      project_downloads: {
+        Row: {
+          downloaded_at: string
+          id: string
+          ip_address: string | null
+          project_id: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          downloaded_at?: string
+          id?: string
+          ip_address?: string | null
+          project_id: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          downloaded_at?: string
+          id?: string
+          ip_address?: string | null
+          project_id?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_downloads_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_files: {
+        Row: {
+          content_type: string | null
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          file_url: string
+          id: string
+          project_id: string
+          updated_at: string
+        }
+        Insert: {
+          content_type?: string | null
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          file_url: string
+          id?: string
+          project_id: string
+          updated_at?: string
+        }
+        Update: {
+          content_type?: string | null
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          file_type?: string
+          file_url?: string
+          id?: string
+          project_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_files_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_stars: {
         Row: {
           created_at: string
@@ -424,53 +506,68 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          downloads_count: number
           forked_from: string | null
           forks_count: number
           github_url: string | null
           id: string
           image_url: string | null
           image_urls: string[] | null
+          is_private: boolean
+          license: string | null
           live_url: string | null
+          readme_content: string | null
           repo_url: string | null
           stars_count: number
           technologies: string[] | null
           title: string
           updated_at: string
           user_id: string
+          visibility: string | null
         }
         Insert: {
           created_at?: string
           description?: string | null
+          downloads_count?: number
           forked_from?: string | null
           forks_count?: number
           github_url?: string | null
           id?: string
           image_url?: string | null
           image_urls?: string[] | null
+          is_private?: boolean
+          license?: string | null
           live_url?: string | null
+          readme_content?: string | null
           repo_url?: string | null
           stars_count?: number
           technologies?: string[] | null
           title: string
           updated_at?: string
           user_id: string
+          visibility?: string | null
         }
         Update: {
           created_at?: string
           description?: string | null
+          downloads_count?: number
           forked_from?: string | null
           forks_count?: number
           github_url?: string | null
           id?: string
           image_url?: string | null
           image_urls?: string[] | null
+          is_private?: boolean
+          license?: string | null
           live_url?: string | null
+          readme_content?: string | null
           repo_url?: string | null
           stars_count?: number
           technologies?: string[] | null
           title?: string
           updated_at?: string
           user_id?: string
+          visibility?: string | null
         }
         Relationships: []
       }

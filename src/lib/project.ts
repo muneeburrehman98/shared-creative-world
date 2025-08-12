@@ -6,17 +6,38 @@ export interface Project {
   title: string;
   description: string;
   repo_url?: string;
+  github_url?: string;
+  live_url?: string;
   technologies: string[];
   image_urls: string[];
   stars_count: number;
   forks_count: number;
+  downloads_count: number;
+  is_private: boolean;
+  visibility: 'public' | 'private' | 'internal';
+  readme_content?: string;
+  license: string;
   created_at: string;
   updated_at: string;
+  forked_from?: string;
   profiles: {
     username: string;
     display_name: string;
     avatar_url?: string;
   };
+}
+
+export interface ProjectFile {
+  id: string;
+  project_id: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  file_type: string;
+  content_type?: string;
+  file_url: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Technology {
@@ -27,7 +48,7 @@ export interface Technology {
 
 export const projectService = {
   // Projects CRUD
-  async getProjects(filter?: string): Promise<Project[]> {
+  async getProjects(filter?: string, includePrivate = false): Promise<Project[]> {
     let query = supabase
       .from('projects')
       .select(`
@@ -35,6 +56,10 @@ export const projectService = {
         profiles!projects_user_id_fkey(username, display_name, avatar_url)
       `)
       .order('created_at', { ascending: false });
+      
+    if (!includePrivate) {
+      query = query.eq('is_private', false);
+    }
       
     if (filter) {
       query = query.contains('technologies', [filter]);
@@ -49,7 +74,10 @@ export const projectService = {
   async getProjectById(id: string): Promise<Project> {
     const { data, error } = await supabase
       .from('projects')
-      .select('*')
+      .select(`
+        *,
+        profiles!projects_user_id_fkey(username, display_name, avatar_url)
+      `)
       .eq('id', id)
       .single();
 
@@ -61,12 +89,24 @@ export const projectService = {
     title: string;
     description: string;
     repo_url?: string;
+    github_url?: string;
+    live_url?: string;
     technologies: string[];
     image_urls: string[];
+    is_private?: boolean;
+    visibility?: 'public' | 'private' | 'internal';
+    readme_content?: string;
+    license?: string;
   }) {
     const { data, error } = await supabase
       .from('projects')
-      .insert([{ ...project, user_id: (await supabase.auth.getUser()).data.user?.id }])
+      .insert([{ 
+        ...project, 
+        user_id: (await supabase.auth.getUser()).data.user?.id,
+        is_private: project.is_private || false,
+        visibility: project.visibility || 'public',
+        license: project.license || 'MIT'
+      }])
       .select()
       .single();
 
@@ -78,8 +118,14 @@ export const projectService = {
     title?: string;
     description?: string;
     repo_url?: string;
+    github_url?: string;
+    live_url?: string;
     technologies?: string[];
     image_urls?: string[];
+    is_private?: boolean;
+    visibility?: 'public' | 'private' | 'internal';
+    readme_content?: string;
+    license?: string;
   }) {
     const { data, error } = await supabase
       .from('projects')
@@ -103,13 +149,47 @@ export const projectService = {
 
   // Star/Fork operations
   async toggleStar(projectId: string) {
-    // Simplified implementation without project_stars table
-    return true;
+    const user = await supabase.auth.getUser();
+    if (!user.data.user) throw new Error('Not authenticated');
+
+    const { data: existingStar } = await supabase
+      .from('project_stars')
+      .select('id')
+      .eq('project_id', projectId)
+      .eq('user_id', user.data.user.id)
+      .single();
+
+    if (existingStar) {
+      await supabase
+        .from('project_stars')
+        .delete()
+        .eq('project_id', projectId)
+        .eq('user_id', user.data.user.id);
+      
+      await supabase.rpc('decrement_star_count', { project_id: projectId });
+      return false;
+    } else {
+      await supabase
+        .from('project_stars')
+        .insert([{ project_id: projectId, user_id: user.data.user.id }]);
+      
+      await supabase.rpc('increment_star_count', { project_id: projectId });
+      return true;
+    }
   },
 
   async checkStar(projectId: string): Promise<boolean> {
-    // Simplified implementation
-    return false;
+    const user = await supabase.auth.getUser();
+    if (!user.data.user) return false;
+
+    const { data } = await supabase
+      .from('project_stars')
+      .select('id')
+      .eq('project_id', projectId)
+      .eq('user_id', user.data.user.id)
+      .single();
+
+    return !!data;
   },
 
   async forkProject(projectId: string) {
@@ -157,6 +237,91 @@ export const projectService = {
       .getPublicUrl(fileName);
 
     return data.publicUrl;
+  },
+
+  async uploadProjectFile(projectId: string, file: File, filePath: string): Promise<ProjectFile> {
+    const user = await supabase.auth.getUser();
+    if (!user.data.user) throw new Error('Not authenticated');
+
+    const fileName = `${projectId}/${filePath}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('project-files')
+      .upload(fileName, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data: urlData } = supabase.storage
+      .from('project-files')
+      .getPublicUrl(fileName);
+
+    const { data, error } = await supabase
+      .from('project_files')
+      .insert([{
+        project_id: projectId,
+        file_name: file.name,
+        file_path: filePath,
+        file_size: file.size,
+        file_type: file.type.split('/')[0],
+        content_type: file.type,
+        file_url: urlData.publicUrl
+      }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as ProjectFile;
+  },
+
+  async getProjectFiles(projectId: string): Promise<ProjectFile[]> {
+    const { data, error } = await supabase
+      .from('project_files')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('file_path');
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async deleteProjectFile(fileId: string): Promise<void> {
+    const { data: file, error: fetchError } = await supabase
+      .from('project_files')
+      .select('*')
+      .eq('id', fileId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const { error: storageError } = await supabase.storage
+      .from('project-files')
+      .remove([`${file.project_id}/${file.file_path}`]);
+
+    if (storageError) throw storageError;
+
+    const { error: dbError } = await supabase
+      .from('project_files')
+      .delete()
+      .eq('id', fileId);
+
+    if (dbError) throw dbError;
+  },
+
+  async downloadProject(projectId: string): Promise<void> {
+    const user = await supabase.auth.getUser();
+    
+    // Track download
+    await supabase
+      .from('project_downloads')
+      .insert([{
+        project_id: projectId,
+        user_id: user.data.user?.id,
+        ip_address: null, // Would need to get from request in real app
+        user_agent: navigator.userAgent
+      }]);
+
+    // Increment download count
+    await supabase.rpc('increment_download_count', { project_id: projectId });
   },
 
   // Technologies
