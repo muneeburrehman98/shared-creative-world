@@ -6,8 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { projectService } from '@/lib/project';
-import { Plus, Image, X } from 'lucide-react';
+import { Plus, Image, X, Upload, Folder, File } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface CreateProjectModalProps {
   onProjectCreated: () => void;
@@ -22,6 +23,7 @@ export const CreateProjectModal = ({ onProjectCreated, children }: CreateProject
   const [techInput, setTechInput] = useState('');
   const [technologies, setTechnologies] = useState<string[]>([]);
   const [projectImages, setProjectImages] = useState<File[]>([]);
+  const [projectFiles, setProjectFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -47,6 +49,24 @@ export const CreateProjectModal = ({ onProjectCreated, children }: CreateProject
     setProjectImages(projectImages.filter((_, i) => i !== index));
   };
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const newFiles = Array.from(e.target.files);
+      setProjectFiles([...projectFiles, ...newFiles]);
+    }
+  };
+
+  const handleFolderSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const newFiles = Array.from(e.target.files);
+      setProjectFiles([...projectFiles, ...newFiles]);
+    }
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setProjectFiles(projectFiles.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async () => {
     if (!title.trim() || !description.trim()) {
       toast({
@@ -68,13 +88,21 @@ export const CreateProjectModal = ({ onProjectCreated, children }: CreateProject
       }
 
       // Create project
-      await projectService.createProject({
+      const project = await projectService.createProject({
         title,
         description,
         repo_url: repoUrl || undefined,
         technologies,
         image_urls: imageUrls
       });
+
+      // Upload project files if any
+      if (projectFiles.length > 0) {
+        for (const file of projectFiles) {
+          const filePath = `projects/${project.id}/${file.webkitRelativePath || file.name}`;
+          await projectService.uploadProjectFile(project.id, file, filePath);
+        }
+      }
 
       toast({
         title: "Project created",
@@ -87,6 +115,7 @@ export const CreateProjectModal = ({ onProjectCreated, children }: CreateProject
       setRepoUrl('');
       setTechnologies([]);
       setProjectImages([]);
+      setProjectFiles([]);
       setOpen(false);
       
       // Notify parent
@@ -112,11 +141,12 @@ export const CreateProjectModal = ({ onProjectCreated, children }: CreateProject
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh]">
         <DialogHeader>
           <DialogTitle>Create New Project</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-4">
+        <ScrollArea className="h-full max-h-[60vh] pr-4">
+          <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="title">Project Title</Label>
             <Input
@@ -223,20 +253,85 @@ export const CreateProjectModal = ({ onProjectCreated, children }: CreateProject
             )}
           </div>
 
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button
-              variant="outline"
-              onClick={() => setOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={loading}
-            >
-              {loading ? 'Creating...' : 'Create Project'}
-            </Button>
+          <div className="space-y-2">
+            <Label>Project Files</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <Label htmlFor="project-files-upload" className="cursor-pointer">
+                <Button type="button" variant="outline" className="w-full" asChild>
+                  <span>
+                    <File className="h-4 w-4 mr-2" />
+                    Upload Files
+                  </span>
+                </Button>
+              </Label>
+              <Label htmlFor="project-folder-upload" className="cursor-pointer">
+                <Button type="button" variant="outline" className="w-full" asChild>
+                  <span>
+                    <Folder className="h-4 w-4 mr-2" />
+                    Upload Folder
+                  </span>
+                </Button>
+              </Label>
+            </div>
+            <Input
+              id="project-files-upload"
+              type="file"
+              multiple
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            <input
+              id="project-folder-upload"
+              type="file"
+              {...({ webkitdirectory: '' } as any)}
+              onChange={handleFolderSelect}
+              className="hidden"
+            />
+            {projectFiles.length > 0 && (
+              <div className="space-y-2 mt-2 max-h-32 overflow-y-auto">
+                <div className="text-sm text-muted-foreground">
+                  {projectFiles.length} file(s) selected
+                </div>
+                {projectFiles.map((file, index) => (
+                  <div key={index} className="flex items-center justify-between p-2 bg-muted rounded-md">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <File className="h-4 w-4 flex-shrink-0" />
+                      <span className="text-sm truncate">
+                        {file.webkitRelativePath || file.name}
+                      </span>
+                      <span className="text-xs text-muted-foreground flex-shrink-0">
+                        ({(file.size / 1024).toFixed(1)}KB)
+                      </span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 flex-shrink-0"
+                      onClick={() => handleRemoveFile(index)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
+          </div>
+        </ScrollArea>
+        
+        <div className="flex justify-end space-x-2 pt-4 border-t">
+          <Button
+            variant="outline"
+            onClick={() => setOpen(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={loading}
+          >
+            {loading ? 'Creating...' : 'Create Project'}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
