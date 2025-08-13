@@ -4,9 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { projectService, type Project } from '@/lib/project';
-import { Star, GitFork, ArrowLeft, ExternalLink, Edit, Trash2 } from 'lucide-react';
+import { projectService, type Project, type ProjectFile } from '@/lib/project';
+import { FileManager } from '@/components/Projects/FileManager';
+import { Star, GitFork, ArrowLeft, ExternalLink, Edit, Trash2, Download, FileText, Folder, Eye } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from '@/hooks/use-auth';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -17,9 +19,11 @@ const ProjectDetail = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const [project, setProject] = useState<Project | null>(null);
+  const [files, setFiles] = useState<ProjectFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [isStarred, setIsStarred] = useState(false);
   const [starCount, setStarCount] = useState(0);
+  const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
     if (!id) return;
@@ -33,6 +37,10 @@ const ProjectDetail = () => {
         // Check if the project is starred by the current user
         const starred = await projectService.checkStar(id);
         setIsStarred(starred);
+        
+        // Load project files
+        const projectFiles = await projectService.getProjectFiles(id);
+        setFiles(projectFiles);
       } catch (error) {
         toast({
           title: "Error",
@@ -106,6 +114,34 @@ const ProjectDetail = () => {
         description: "Failed to delete project",
         variant: "destructive"
       });
+    }
+  };
+
+  const handleDownload = async () => {
+    if (!project) return;
+    
+    try {
+      await projectService.downloadProject(project.id);
+      toast({
+        title: "Download started",
+        description: "Project download has been tracked",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to track download",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleFilesChange = async () => {
+    if (!id) return;
+    try {
+      const projectFiles = await projectService.getProjectFiles(id);
+      setFiles(projectFiles);
+    } catch (error) {
+      console.error('Failed to refresh files:', error);
     }
   };
 
@@ -230,14 +266,34 @@ const ProjectDetail = () => {
                   Fork ({project.forks_count})
                 </Button>
                 
-                {project.repo_url && (
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDownload}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Download ({project.downloads_count || 0})
+                </Button>
+                
+                {project.github_url && (
                   <Button 
                     variant="outline"
                     size="sm"
-                    onClick={() => window.open(project.repo_url, '_blank')}
+                    onClick={() => window.open(project.github_url, '_blank')}
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
-                    Repository
+                    GitHub
+                  </Button>
+                )}
+                
+                {project.live_url && (
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(project.live_url, '_blank')}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Live Demo
                   </Button>
                 )}
               </div>
@@ -245,31 +301,94 @@ const ProjectDetail = () => {
           </CardHeader>
           
           <CardContent>
-            <div className="flex flex-wrap gap-2 mb-6">
-              {project.technologies.map((tech, index) => (
-                <Badge key={index} variant="secondary">
-                  {tech}
-                </Badge>
-              ))}
-            </div>
-            
-            <div className="prose dark:prose-invert max-w-none mb-8">
-              <p>{project.description}</p>
-            </div>
-            
-            {project.image_urls && project.image_urls.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {project.image_urls.map((url, index) => (
-                  <div key={index} className="rounded-lg overflow-hidden">
-                    <img 
-                      src={url} 
-                      alt={`${project.title} screenshot ${index + 1}`} 
-                      className="w-full h-auto"
-                    />
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="w-full justify-start">
+                <TabsTrigger value="overview" className="flex items-center gap-2">
+                  <Eye className="h-4 w-4" />
+                  Overview
+                </TabsTrigger>
+                <TabsTrigger value="readme" className="flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  README
+                </TabsTrigger>
+                <TabsTrigger value="files" className="flex items-center gap-2">
+                  <Folder className="h-4 w-4" />
+                  Files ({files.length})
+                </TabsTrigger>
+              </TabsList>
+
+              <div className="mt-6">
+                <TabsContent value="overview">
+                  <div className="space-y-6">
+                    <div className="flex flex-wrap gap-2">
+                      {project.technologies.map((tech, index) => (
+                        <Badge key={index} variant="secondary">
+                          {tech}
+                        </Badge>
+                      ))}
+                    </div>
+                    
+                    <div className="prose dark:prose-invert max-w-none">
+                      <p className="text-muted-foreground">{project.description}</p>
+                    </div>
+                    
+                    {project.image_urls && project.image_urls.length > 0 && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {project.image_urls.map((url, index) => (
+                          <div key={index} className="rounded-lg overflow-hidden border">
+                            <img 
+                              src={url} 
+                              alt={`${project.title} screenshot ${index + 1}`} 
+                              className="w-full h-auto"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {project.license && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span>License:</span>
+                        <Badge variant="outline">{project.license}</Badge>
+                      </div>
+                    )}
                   </div>
-                ))}
+                </TabsContent>
+
+                <TabsContent value="readme">
+                  <div className="prose dark:prose-invert max-w-none">
+                    {project.readme_content ? (
+                      <div className="whitespace-pre-wrap border rounded-lg p-4 bg-muted/50">
+                        {project.readme_content}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <FileText className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                        <p>No README available for this project.</p>
+                        {isOwner && (
+                          <Button 
+                            variant="outline" 
+                            className="mt-4"
+                            onClick={() => navigate(`/projects/${project.id}/edit`)}
+                          >
+                            Add README
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="files">
+                  <FileManager 
+                    projectId={project.id}
+                    files={files}
+                    onFilesChange={handleFilesChange}
+                    canEdit={isOwner}
+                  />
+                </TabsContent>
               </div>
-            )}
+            </Tabs>
           </CardContent>
         </Card>
       </div>

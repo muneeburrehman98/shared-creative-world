@@ -15,6 +15,7 @@ import { CreateSocialAccount } from "./pages/Portals/CreateSocialAccount";
 import { FollowingFeed } from "./pages/Portals/FollowingFeed";
 import ProjectHub from "./pages/Portals/ProjectHub";
 import ProjectDetail from "./pages/Portals/ProjectDetail";
+import ProjectEdit from "./pages/Portals/ProjectEdit";
 import { GroupChat } from "./pages/Portals/GroupChat";
 import { ProtectedRoute } from "@/components/Auth/ProtectedRoute";
 import Nuets from "./pages/Portals/social/Nuets";
@@ -44,7 +45,7 @@ const App = () => (
           {/* Project Routes */}
           <Route path="/portals/projects" element={<ProtectedRoute><ProjectHub /></ProtectedRoute>} />
           <Route path="/projects/:id" element={<ProtectedRoute><ProjectDetail /></ProtectedRoute>} />
-          <Route path="/projects/:id/edit" element={<ProtectedRoute><ProjectDetail /></ProtectedRoute>} />
+          <Route path="/projects/:id/edit" element={<ProtectedRoute><ProjectEdit /></ProtectedRoute>} />
           
           {/* Group Routes */}
           <Route path="/portals/groups" element={<ProtectedRoute><GroupChat /></ProtectedRoute>} />

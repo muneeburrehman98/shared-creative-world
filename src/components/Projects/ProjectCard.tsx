@@ -4,7 +4,7 @@ import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Star, GitFork, ExternalLink, Trash2, Edit } from 'lucide-react';
+import { Star, GitFork, ExternalLink, Trash2, Edit, Download, Eye } from 'lucide-react';
 import { Project, projectService } from '@/lib/project';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
@@ -179,17 +179,37 @@ export const ProjectCard = ({ project, onDelete }: ProjectCardProps) => {
             <GitFork className="h-4 w-4 mr-1" />
             <span>{project.forks_count}</span>
           </Button>
+
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="p-0 h-auto hover:bg-transparent"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Download className="h-4 w-4 mr-1" />
+            <span>{project.downloads_count || 0}</span>
+          </Button>
+
+          {project.is_private && (
+            <Badge variant="secondary" className="text-xs">
+              Private
+            </Badge>
+          )}
         </div>
         
         <div className="flex items-center space-x-2">
-          {project.repo_url && (
+          {(project.github_url || project.live_url) && (
             <Button 
               variant="ghost" 
               size="sm" 
               className="p-1 h-auto"
               onClick={(e) => {
                 e.stopPropagation();
-                window.open(project.repo_url, '_blank');
+                if (project.github_url) {
+                  window.open(project.github_url, '_blank');
+                } else if (project.live_url) {
+                  window.open(project.live_url, '_blank');
+                }
               }}
             >
               <ExternalLink className="h-4 w-4" />
