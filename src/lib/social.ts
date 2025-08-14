@@ -509,23 +509,43 @@ export const socialService = {
     const user = await supabase.auth.getUser();
     if (!user.data.user) return [];
 
-    const { data: followedUsers } = await supabase
+    // Get accepted follows
+    const { data: followedUsers, error: followError } = await supabase
       .from('follows')
       .select('following_id')
       .eq('follower_id', user.data.user.id)
       .eq('status', 'accepted');
 
+    if (followError) throw followError;
     if (!followedUsers || followedUsers.length === 0) return [];
 
+    // Get posts from followed users
     const { data, error } = await supabase
       .from('posts')
-      .select(`*, profiles!posts_user_id_fkey(username, display_name, avatar_url)`)
+      .select('*')
       .in('user_id', followedUsers.map(f => f.following_id))
-      .not('is_private', 'eq', true)
+      .eq('is_private', false)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return (data as unknown as Post[]) || [];
+
+    // Manually fetch profiles for posts
+    const postsWithProfiles = await Promise.all(
+      (data || []).map(async (post) => {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('username, display_name, avatar_url')
+          .eq('user_id', post.user_id)
+          .single();
+
+        return {
+          ...post,
+          profiles: profile || { username: '', display_name: '', avatar_url: null }
+        };
+      })
+    );
+
+    return postsWithProfiles as Post[];
   },
   
   async getPostsByHashtag(hashtag: string): Promise<Post[]> {

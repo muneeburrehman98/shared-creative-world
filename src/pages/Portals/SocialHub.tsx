@@ -8,6 +8,8 @@ import { CreatePostModal } from '@/components/Social/CreatePostModal';
 import { StoryBar } from '@/components/Social/StoryBar';
 import { UserSearchModal } from '@/components/Social/UserSearchModal';
 import { UserProfileButton } from '@/components/Social/UserProfileButton';
+import { NotificationCenter } from '@/components/Social/NotificationCenter';
+import { DirectMessages } from '@/components/Social/DirectMessages';
 import { Post } from '@/lib/social/types';
 import { socialService } from '@/lib/social';
 import { useAuth } from '@/hooks/use-auth';
@@ -85,6 +87,11 @@ const SocialHub = () => {
                   <Search className="h-4 w-4" />
                 </Button>
               </UserSearchModal>
+              <Button variant="ghost" size="sm" onClick={() => navigate('/portals/social/explore')}>
+                <Search className="h-4 w-4" />
+              </Button>
+              <NotificationCenter />
+              <DirectMessages />
               <Button variant="ghost" size="sm" onClick={() => navigate('/portals/social/nuets')}>
                 <Play className="h-4 w-4" />
               </Button>
@@ -107,7 +114,7 @@ const SocialHub = () => {
 
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="home" className="flex items-center gap-2">
               <Home className="h-4 w-4" />
               Home
@@ -115,6 +122,10 @@ const SocialHub = () => {
             <TabsTrigger value="following" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               Following
+            </TabsTrigger>
+            <TabsTrigger value="explore" className="flex items-center gap-2">
+              <Search className="h-4 w-4" />
+              Explore
             </TabsTrigger>
             <TabsTrigger value="nuets" className="flex items-center gap-2">
               <Play className="h-4 w-4" />
@@ -178,6 +189,21 @@ const SocialHub = () => {
                 />
               ))
             )}
+          </TabsContent>
+
+          {/* Explore Tab */}
+          <TabsContent value="explore" className="space-y-4 mt-6">
+            <div className="text-center py-12">
+              <div className="mb-4">
+                <Search className="h-16 w-16 mx-auto text-blue-500" />
+              </div>
+              <h2 className="text-2xl font-bold mb-2">Explore</h2>
+              <p className="text-muted-foreground mb-6">Discover trending posts and new people</p>
+              <Button onClick={() => navigate('/portals/social/explore')} size="lg">
+                <Search className="h-4 w-4 mr-2" />
+                Explore Now
+              </Button>
+            </div>
           </TabsContent>
 
           {/* Nuets Preview */}

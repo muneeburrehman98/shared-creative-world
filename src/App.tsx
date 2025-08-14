@@ -10,7 +10,6 @@ import SignUp from "./pages/Auth/SignUp";
 import ForgotPassword from "./pages/Auth/ForgotPassword";
 import ResetPassword from "./pages/Auth/ResetPassword";
 import SocialFeed from "./pages/Portals/SocialFeed";
-import { PublicProfile } from "./pages/Portals/PublicProfile";
 import { CreateSocialAccount } from "./pages/Portals/CreateSocialAccount";
 import { FollowingFeed } from "./pages/Portals/FollowingFeed";
 import ProjectHub from "./pages/Portals/ProjectHub";
@@ -18,7 +17,10 @@ import ProjectDetail from "./pages/Portals/ProjectDetail";
 import ProjectEdit from "./pages/Portals/ProjectEdit";
 import { GroupChat } from "./pages/Portals/GroupChat";
 import { ProtectedRoute } from "@/components/Auth/ProtectedRoute";
-import Nuets from "./pages/Portals/social/Nuets";
+import Nuets from './pages/Portals/social/Nuets';
+import { SocialExplore } from '@/pages/Portals/SocialExplore';
+import { SocialActivity } from '@/pages/Portals/SocialActivity';
+import { PublicProfile } from '@/pages/Portals/PublicProfile';
 
 const queryClient = new QueryClient();
 
@@ -51,6 +53,8 @@ const App = () => (
           <Route path="/portals/groups" element={<ProtectedRoute><GroupChat /></ProtectedRoute>} />
           
           <Route path="/portals/social/nuets" element={<ProtectedRoute><Nuets /></ProtectedRoute>} />
+          <Route path="/portals/social/explore" element={<ProtectedRoute><SocialExplore /></ProtectedRoute>} />
+          <Route path="/portals/social/activity" element={<ProtectedRoute><SocialActivity /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

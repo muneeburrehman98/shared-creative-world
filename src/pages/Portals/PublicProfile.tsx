@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { FollowerCountModal } from '@/components/Social/FollowerCountModal';
 import { ArrowLeft, MapPin, Calendar, Phone, Building, Lock, Edit } from 'lucide-react';
-import { FollowButton } from '@/components/Social/FollowButton';
+import { EnhancedFollowButton } from '@/components/Social/EnhancedFollowButton';
 import { PostCard } from '@/components/Social/PostCard';
 import { Post } from '@/lib/social/types';
 import { socialService } from '@/lib/social';
@@ -235,7 +235,7 @@ export const PublicProfile = () => {
                 </div>
 
                 {!isOwnProfile && (
-                  <FollowButton userId={profile.user_id} />
+                  <EnhancedFollowButton userId={profile.user_id} />
                 )}
                 {isOwnProfile && (
                   <Button
