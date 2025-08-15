@@ -659,7 +659,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      decrement_star_count: {
+        Args: { project_id: string }
+        Returns: undefined
+      }
+      increment_download_count: {
+        Args: { project_id: string }
+        Returns: undefined
+      }
+      increment_star_count: {
+        Args: { project_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

@@ -56,7 +56,7 @@ export const projectService = {
       .from('projects')
       .select(`
         *,
-        profiles(username, display_name, avatar_url)
+        profiles!inner(username, display_name, avatar_url)
       `)
       .order('created_at', { ascending: false });
       
@@ -80,7 +80,7 @@ export const projectService = {
       .from('projects')
       .select(`
         *,
-        profiles(username, display_name, avatar_url)
+        profiles!inner(username, display_name, avatar_url)
       `)
       .eq('id', id)
       .single();
