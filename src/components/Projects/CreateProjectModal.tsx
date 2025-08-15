@@ -141,11 +141,11 @@ export const CreateProjectModal = ({ onProjectCreated, children }: CreateProject
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] max-h-[80vh]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[600px] max-h-[85vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Create New Project</DialogTitle>
         </DialogHeader>
-        <ScrollArea className="h-full max-h-[60vh] pr-4">
+        <ScrollArea className="flex-1 max-h-[65vh] pr-4">
           <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="title">Project Title</Label>
